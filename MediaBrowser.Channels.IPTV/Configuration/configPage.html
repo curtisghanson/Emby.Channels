@@ -58,6 +58,25 @@
                         </div>
 
                         <br />
+                        <div>
+                            <label for="ParentalRating">Parental Rating:</label>
+                            <select id="ParentalRating" data-mini="true"></select>
+                        </div>
+
+                        <br />
+                        <div>
+                            <div>
+                                <h1 style="display:inline-block;vertical-align:middle;">Tags:</h1>
+                                <paper-button raised class="btnAddTag submit mini" style="margin-left:1em;" title="Add Tag">
+                                    <iron-icon icon="add"></iron-icon>
+                                    <span>Add Tag</span>
+                                </paper-button>
+                            </div>
+                            <div class="Tags" style="margin-top:.5em;">
+                            </div>
+                        </div>
+
+                        <br />
                         <button type="submit" data-theme="b" data-mini="true">Add</button>
                         <button type="button" data-theme="c" onclick="$('#streamPopup').popup('close')" data-mini="true">Cancel</button>
 
@@ -75,6 +94,7 @@
 
                 load: function () {
                     IPTVConfigurationPage.populateStreamList();
+                    IPTVConfigurationPage.populateParentalRatings();
                 },
 
                 populateStreamList: function () {
@@ -84,9 +104,9 @@
 
                     var html = "";
 
-                    html += '<li data-role="list-divider" class="mediaLocationsHeader"><h3>Bookmarks</h3>';
+                    html += '<li data-role="list-divider" class="mediaLocationsHeader"><h2>Bookmarks</h2>';
                     html += '<span data-corners="true" data-shadow="true" data-iconshadow="true" data-wrapperels="span" data-icon="plus" data-iconpos="notext" data-theme="a" data-inline="true" data-mini="true" ';
-                    html += 'class="ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all ui-mini ui-btn-inline ui-btn-icon-notext ui-icon-plus" data-icon="plus" onclick="IPTVConfigurationPage.addStreamPopup();">&nbsp;</span>';
+                    html += 'class="ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all ui-mini ui-btn-inline ui-btn-icon-notext ui-icon-plus" data-icon="plus" onclick="IPTVConfigurationPage.addStreamPopup();">&nbsp;</span></li>';
 
                     for (var i = 0; i < streams.length; i++) {
 
@@ -134,6 +154,37 @@
                     });
                 },
 
+                populateParentalRatings: function () {
+
+                	var userId = Dashboard.getCurrentUserId();
+
+                	var promiseUser = ApiClient.getUser(userId);
+                    var promiseRatings = ApiClient.getParentalRatings();
+
+                    Promise.all([promiseUser, promiseRatings]).then(function(responses) { 
+
+                    	var parentalRatings = responses[1];
+	                    var page = $($.mobile.activePage);
+	                    var html = '<option value=""></option>';
+
+	                    var ratings = [];
+	                    var i, length, rating;
+
+				        for (i = 0; i < parentalRatings.length; i++) {
+
+				            rating = parentalRatings[i];
+
+				            if (rating) {
+				                html += "<option value='" + rating.Value + "'>" + rating.Name + "</option>";
+				            }
+				        }
+
+	        			$('#ParentalRating', page).html(html);
+
+	        		});
+
+        		},
+
                 addStreamPopup: function () {
                     var page = $($.mobile.activePage);
                     $('#name', page).val("").focus();
@@ -171,6 +222,8 @@
                 var url = $('#URL', page).val();
                 var type = $('#Type', page).val();
                 var userId = Dashboard.getCurrentUserId();
+                var rating = $('#ParentalRating', page).val();
+                //var tags = $('.Tags', page).val();
 
                 if (IPTVConfigurationPage.config.Bookmarks.length > 0) {
 
@@ -180,7 +233,9 @@
                             IPTVConfigurationPage.config.Bookmarks[i].Image = image;
                             IPTVConfigurationPage.config.Bookmarks[i].Path = url;
                             IPTVConfigurationPage.config.Bookmarks[i].Protocol = type;
+                            IPTVConfigurationPage.config.Bookmarks[i].ParentalRating = rating;
                             IPTVConfigurationPage.config.Bookmarks[i].UserId = userId;
+                            //IPTVCongigurationPage.config.Bookmarks[i].Tags = tags;
                         }
                     }
                 }
@@ -194,6 +249,8 @@
                     conf.Path = url;
                     conf.Protocol = type;
                     conf.UserId = userId;
+                    conf.ParentalRating = rating;
+                    //conf.Tags = tags;
                     IPTVConfigurationPage.config.Bookmarks.push(conf);
 
                 }

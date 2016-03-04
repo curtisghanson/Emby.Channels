@@ -31,6 +31,13 @@ namespace MediaBrowser.Channels.IPTV.Configuration
         public String Image { get; set; }
         public String Path { get; set; }
         public MediaProtocol Protocol { get; set; }
-        public String UserId { get; set; }
+		public String UserId { get; set; }
+		public int ParentalRating { get; set; }
+        //public Tags[] Tags { get; set; }
     }
+
+	//public class Tag
+	//{
+	//	public String Name { get; set; }
+	//}
 }

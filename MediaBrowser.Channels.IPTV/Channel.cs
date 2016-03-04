@@ -1,6 +1,8 @@
 ﻿using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Model.Channels;
 using MediaBrowser.Model.Drawing;
 using MediaBrowser.Model.Entities;
@@ -16,10 +18,12 @@ namespace MediaBrowser.Channels.IPTV
     class Channel : IChannel, IHasCacheKey
     {
         private readonly ILogger _logger;
+        private readonly IUserManager _user;
 
-        public Channel(ILogManager logManager)
+        public Channel(IUserManager userManager, ILogManager logManager)
         {
-            _logger = logManager.GetLogger(GetType().Name);
+			_user = userManager;
+			_logger = logManager.GetLogger(GetType().Name);
         }
 
         public string DataVersion
@@ -41,6 +45,7 @@ namespace MediaBrowser.Channels.IPTV
 
         private async Task<ChannelItemResult> GetChannelItemsInternal(string userId, CancellationToken cancellationToken)
         {
+            var user = string.IsNullOrEmpty(userId) ? null : _user.GetUserById(userId);
             var items = new List<ChannelItemInfo>();
 
             foreach (var s in Plugin.Instance.Configuration.Bookmarks)
@@ -50,28 +55,34 @@ namespace MediaBrowser.Channels.IPTV
                 //{
                 //    continue;
                 //}
-
-                var item = new ChannelItemInfo
+                if (
+                    (user.Policy.MaxParentalRating.HasValue && user.Policy.MaxParentalRating >= s.ParentalRating)
+                    || (!user.Policy.MaxParentalRating.HasValue)
+                )
                 {
-                    Name = s.Name,
-                    ImageUrl = s.Image,
-                    Id = s.Name,
-                    Type = ChannelItemType.Media,
-                    ContentType = ChannelMediaContentType.Clip,
-                    MediaType = ChannelMediaType.Video,
+                    var item = new ChannelItemInfo
+					{
+						Name = s.Name,
+						ImageUrl = s.Image,
+						Id = s.Name,
+						Type = ChannelItemType.Media,
+						ContentType = ChannelMediaContentType.Clip,
+						MediaType = ChannelMediaType.Video,
 
-                    MediaSources = new List<ChannelMediaInfo>
-                    {
-                        new ChannelMediaInfo
-                        {
-                            Path = s.Path,
-                            Protocol = s.Protocol
-                        }  
-                    }
-                };
+						MediaSources = new List<ChannelMediaInfo>
+						{
+							new ChannelMediaInfo
+							{
+								Path = s.Path,
+								Protocol = s.Protocol
+							}  
+						}
+					};
 
-                items.Add(item);
-            }
+					items.Add(item);
+				}
+			}
+
             return new ChannelItemResult
             {
                 Items = items.ToList()
